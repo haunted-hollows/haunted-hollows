@@ -70,7 +70,10 @@ public class PlayerMovement : MonoBehaviour
             transform.position += Vector3.back * (speed * speedMultiplier) * Time.deltaTime;
         }
         if (Input.GetKeyDown(KeyCode.Space) && availableJumps > 0) {
-            rigidBody.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            //rigidBody.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+	        rigidBody.velocity = new Vector2(rigidBody.velocity.x, 0f);
+
+	    rigidBody.AddForce(new Vector3(0, jumpForce, 0), ForceMode.Impulse);
             availableJumps--;
         }
         
