@@ -8,7 +8,7 @@ public class PlayerMovement : MonoBehaviour
     public bool DEBUG_MODE = false;
     
     // Propreties
-    public float maxJumps = 2;
+    public float airJumps = 1; // Number of air jumps
     public float speed = 2.5f;
     public float runningMultiplier = 1.5f;
     public float raycastDownDistance = 1f; // How far to raycast down
@@ -34,7 +34,7 @@ public class PlayerMovement : MonoBehaviour
         speedMultiplier = 1;
         xSpeed = 0;
         ySpeed = 0;
-        availableJumps = maxJumps;
+        availableJumps = airJumps;
     }
 
     // Update is called once per frame
@@ -44,8 +44,8 @@ public class PlayerMovement : MonoBehaviour
         isRunning = Input.GetKey(KeyCode.LeftShift); 
         speedMultiplier = (isRunning)? (speed * runningMultiplier): speed;
 
-        // Update x & y speeds each frame
-        ySpeed += Physics.gravity.y * Time.deltaTime;
+        // Update x & y speeds each frame, also add value to y gravity to make it heavier
+        ySpeed += (Physics.gravity.y - 3) * (Time.deltaTime);
         xSpeed += Physics.gravity.x * Time.deltaTime;
 
         // Groundcheck by sending a raycast downwards
@@ -53,7 +53,7 @@ public class PlayerMovement : MonoBehaviour
 
         // Handle double jumping 
         if (isGrounded) {
-            availableJumps = maxJumps;
+            availableJumps = airJumps;
         } 
 
         // Key handling
@@ -69,9 +69,7 @@ public class PlayerMovement : MonoBehaviour
         if (Input.GetKey(KeyCode.S)) {
             transform.position += Vector3.back * (speed * speedMultiplier) * Time.deltaTime;
         }
-        // Have to do availableJumps > 1 because player instantly get a jump because of raycast
-        // If we ever get a weird interaction with uneven terrain it can be because of this
-        if (Input.GetKeyDown(KeyCode.Space) && availableJumps > 1) {
+        if (Input.GetKeyDown(KeyCode.Space) && availableJumps > 0) {
             rigidBody.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
             availableJumps--;
         }
