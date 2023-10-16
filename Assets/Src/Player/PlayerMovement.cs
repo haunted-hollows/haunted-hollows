@@ -4,6 +4,9 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
+    // Import movement actions from PlayerControls script
+    public PlayerControls controls;
+
     // Script flags
     public bool DEBUG_MODE = false;
     
@@ -14,7 +17,11 @@ public class PlayerMovement : MonoBehaviour
     public float raycastDownDistance = 1f; // How far to raycast down
     public float jumpForce = 8f;
     public LayerMask groundLayer;
-
+    [HideInInspector] // Hide in unity propreties
+    public Camera mainCam;
+    [HideInInspector] // Hide in unity propreties
+    public bool steer;
+ 
     private bool frameJump;
     private bool isRunning;
     private bool isGrounded;
@@ -22,6 +29,8 @@ public class PlayerMovement : MonoBehaviour
     private float speedMultiplier;
     private float ySpeed;
     private float xSpeed;
+
+    // References
     private Rigidbody rigidBody;
 
     // Start is called before the first frame update
@@ -70,10 +79,8 @@ public class PlayerMovement : MonoBehaviour
             transform.position += Vector3.back * (speed * speedMultiplier) * Time.deltaTime;
         }
         if (Input.GetKeyDown(KeyCode.Space) && availableJumps > 0) {
-            //rigidBody.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-	        rigidBody.velocity = new Vector2(rigidBody.velocity.x, 0f);
-
-	    rigidBody.AddForce(new Vector3(0, jumpForce, 0), ForceMode.Impulse);
+            rigidBody.velocity = new Vector2(rigidBody.velocity.x, 0f);
+            rigidBody.AddForce(new Vector3(0, jumpForce, 0), ForceMode.Impulse);
             availableJumps--;
         }
         
