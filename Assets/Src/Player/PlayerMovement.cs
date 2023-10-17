@@ -9,26 +9,24 @@ public class PlayerMovement : MonoBehaviour
 
     // Script flags
     public bool DEBUG_MODE = false;
-    
+
     // Propreties
-    public float airJumps = 1; // Number of air jumps
+    public float jumpNumber = 2; // Number of jumps
     public float speed = 2.5f;
     public float runningMultiplier = 1.5f;
     public float raycastDownDistance = 1f; // How far to raycast down
     public float jumpForce = 8f;
+    public float lerpRate = 0.15f;
     public LayerMask groundLayer;
     [HideInInspector] // Hide in unity propreties
     public Camera mainCam;
     [HideInInspector] // Hide in unity propreties
     public bool steer;
- 
-    private bool frameJump;
+
     private bool isRunning;
     private bool isGrounded;
     private float availableJumps;
     private float speedMultiplier;
-    private float ySpeed;
-    private float xSpeed;
 
     // References
     private Rigidbody rigidBody;
@@ -41,65 +39,64 @@ public class PlayerMovement : MonoBehaviour
         isGrounded = false;
         isRunning = false;
         speedMultiplier = 1;
-        xSpeed = 0;
-        ySpeed = 0;
-        availableJumps = airJumps;
+        availableJumps = jumpNumber;
     }
 
     // Update is called once per frame
     void Update()
     {
-        // Running logic
-        isRunning = Input.GetKey(KeyCode.LeftShift); 
-        speedMultiplier = (isRunning)? (speed * runningMultiplier): speed;
+        // Fetch horizontal and vertical input
+        float horizontal = Input.GetAxis("Horizontal");
+        float vertical = Input.GetAxis("Vertical");
 
-        // Update x & y speeds each frame, also add value to y gravity to make it heavier
-        ySpeed += (Physics.gravity.y - 3) * (Time.deltaTime);
-        xSpeed += Physics.gravity.x * Time.deltaTime;
+        // Running logic
+        isRunning = Input.GetKey(KeyCode.LeftShift);
+        speedMultiplier = (isRunning) ? (speed * runningMultiplier) : speed;
 
         // Groundcheck by sending a raycast downwards
         isGrounded = Physics.Raycast(transform.position, Vector3.down, out _, raycastDownDistance, groundLayer);
 
         // Handle double jumping 
-        if (isGrounded) {
-            availableJumps = airJumps;
-        } 
+        if (isGrounded)
+        {
+            availableJumps = jumpNumber;
+        }
 
-        // Key handling
-        if (Input.GetKey(KeyCode.D)) {
-            transform.position += Vector3.right * (speed * speedMultiplier) * Time.deltaTime;
+        // Create a direction vector based on the input
+        Vector3 direction = new Vector3(horizontal, 0, vertical);
+        if (direction.magnitude > 1)
+        {
+            direction /= direction.magnitude;
         }
-        if (Input.GetKey(KeyCode.A)) {
-            transform.position += Vector3.left * (speed * speedMultiplier) * Time.deltaTime;
+
+        // Movement
+        if (direction.magnitude >= 0.1f)
+        {
+            Vector3 targetPosition = rigidBody.position + direction * (speed * speedMultiplier) * Time.deltaTime;
+            rigidBody.MovePosition(Vector3.Lerp(rigidBody.position, targetPosition, lerpRate));
         }
-        if (Input.GetKey(KeyCode.W)) {
-            transform.position += Vector3.forward * (speed * speedMultiplier) * Time.deltaTime;
-        }
-        if (Input.GetKey(KeyCode.S)) {
-            transform.position += Vector3.back * (speed * speedMultiplier) * Time.deltaTime;
-        }
-        if (Input.GetKeyDown(KeyCode.Space) && availableJumps > 0) {
-            rigidBody.velocity = new Vector2(rigidBody.velocity.x, 0f);
-            rigidBody.AddForce(new Vector3(0, jumpForce, 0), ForceMode.Impulse);
+
+        // Jump
+        if (Input.GetKeyDown(KeyCode.Space) && availableJumps > 0)
+        {
+            rigidBody.velocity = new Vector2(rigidBody.velocity.x, jumpForce);
             availableJumps--;
         }
-        
+
         // Print debug info if we are in debug mode
         if (DEBUG_MODE)
-          DebugPrint();
+            DebugPrint();
     }
 
     // Debug print function
     void DebugPrint()
     {
-        Debug.Log((object)("SPEED:::", speed)); 
-        Debug.Log((object)("RUNNING_MULTIPLIER:::", runningMultiplier)); 
-        Debug.Log((object)("SPEED_MULTIPLIER:::", speedMultiplier)); 
-        Debug.Log((object)("JUMP_FORCE:::", jumpForce)); 
-        Debug.Log((object)("AVAILABLE_JUMPS:::", availableJumps)); 
-        Debug.Log((object)("IS_RUNNING:::", isRunning)); 
-        Debug.Log((object)("IS_GROUNDED:::", isGrounded)); 
-        Debug.Log((object)("X_SPEED:::", xSpeed)); 
-        Debug.Log((object)("Y_SPEED:::", ySpeed)); 
+        Debug.Log((object)("SPEED:::", speed));
+        Debug.Log((object)("RUNNING_MULTIPLIER:::", runningMultiplier));
+        Debug.Log((object)("SPEED_MULTIPLIER:::", speedMultiplier));
+        Debug.Log((object)("JUMP_FORCE:::", jumpForce));
+        Debug.Log((object)("AVAILABLE_JUMPS:::", availableJumps));
+        Debug.Log((object)("IS_RUNNING:::", isRunning));
+        Debug.Log((object)("IS_GROUNDED:::", isGrounded));
     }
 }
