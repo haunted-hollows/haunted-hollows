@@ -10,23 +10,24 @@ public class PlayerMovement : MonoBehaviour
     // Script flags
     public bool DEBUG_MODE = false;
 
-    // Propreties
+    // Properties
     public float jumpNumber = 2; // Number of jumps
-    public float speed = 2.5f;
+    public float speed = 8f;
     public float runningMultiplier = 1.5f;
-    public float raycastDownDistance = 1f; // How far to raycast down
+    public float raycastDownDistance = 0.7f; // How far to raycast down
     public float jumpForce = 8f;
     public float lerpRate = 0.15f;
     public LayerMask groundLayer;
-    [HideInInspector] // Hide in unity propreties
+    [HideInInspector] // Hide in unity properties
     public Camera mainCam;
-    [HideInInspector] // Hide in unity propreties
+    [HideInInspector] // Hide in unity properties
     public bool steer;
 
     private bool isRunning;
     private bool isGrounded;
     private float availableJumps;
     private float speedMultiplier;
+    private bool hasDoubleJumped = false;
 
     // References
     private Rigidbody rigidBody;
@@ -42,7 +43,6 @@ public class PlayerMovement : MonoBehaviour
         availableJumps = jumpNumber;
     }
 
-    // Update is called once per frame
     void Update()
     {
         // Fetch horizontal and vertical input
@@ -52,15 +52,6 @@ public class PlayerMovement : MonoBehaviour
         // Running logic
         isRunning = Input.GetKey(KeyCode.LeftShift);
         speedMultiplier = (isRunning) ? (speed * runningMultiplier) : speed;
-
-        // Groundcheck by sending a raycast downwards
-        isGrounded = Physics.Raycast(transform.position, Vector3.down, out _, raycastDownDistance, groundLayer);
-
-        // Handle double jumping 
-        if (isGrounded)
-        {
-            availableJumps = jumpNumber;
-        }
 
         // Create a direction vector based on the input
         Vector3 direction = new Vector3(horizontal, 0, vertical);
@@ -76,11 +67,29 @@ public class PlayerMovement : MonoBehaviour
             rigidBody.MovePosition(Vector3.Lerp(rigidBody.position, targetPosition, lerpRate));
         }
 
-        // Jump
-        if (Input.GetKeyDown(KeyCode.Space) && availableJumps > 0)
+        // Jump Logic
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            rigidBody.velocity = new Vector2(rigidBody.velocity.x, jumpForce);
-            availableJumps--;
+            if (isGrounded)
+            {
+                Jump();
+                hasDoubleJumped = false;
+            }
+            else if (!hasDoubleJumped)
+            {
+                Jump();
+                hasDoubleJumped = true;
+            }
+
+            if (rigidBody.velocity.y > 0f)
+            {
+                rigidBody.velocity = new Vector2(rigidBody.velocity.x, rigidBody.velocity.y * 0.5f);
+            }
+        }
+
+        if (isGrounded)
+        {
+            availableJumps = jumpNumber;
         }
 
         // Print debug info if we are in debug mode
@@ -88,15 +97,31 @@ public class PlayerMovement : MonoBehaviour
             DebugPrint();
     }
 
+    void Jump()
+    {
+        rigidBody.velocity = new Vector2(rigidBody.velocity.x, jumpForce);
+        availableJumps--;
+    }
+
+    void OnTriggerStay(Collider other)
+    {
+        if (other.transform.tag == "Ground")
+        {
+            isGrounded = true;
+        }
+    }
+
+    void OnTriggerExit(Collider other)
+    {
+        if (other.transform.tag == "Ground")
+        {
+            isGrounded = false;
+        }
+    }
+
     // Debug print function
     void DebugPrint()
     {
-        Debug.Log((object)("SPEED:::", speed));
-        Debug.Log((object)("RUNNING_MULTIPLIER:::", runningMultiplier));
-        Debug.Log((object)("SPEED_MULTIPLIER:::", speedMultiplier));
-        Debug.Log((object)("JUMP_FORCE:::", jumpForce));
         Debug.Log((object)("AVAILABLE_JUMPS:::", availableJumps));
-        Debug.Log((object)("IS_RUNNING:::", isRunning));
-        Debug.Log((object)("IS_GROUNDED:::", isGrounded));
     }
 }
